@@ -220,7 +220,9 @@ The system successfully:
 - Prints text in 64‑bit mode  
 - Boots without triple faults
 
-Tag: **v0.0.1-longmode**
+## 🏷 Tag Index
+- v0.0.1-longmode — first successful long‑mode boot
+- v0.0.2-pmm-working — physical memory manager fully operational
 
 ---
 
