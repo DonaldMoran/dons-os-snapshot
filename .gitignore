@@ -1,0 +1,34 @@
+# Build artifacts
+*.bin
+*.img
+*.iso
+*.o
+*.elf
+*.map
+
+# NASM listing / debug files
+*.lst
+*.dbg
+
+# QEMU runtime files
+*.log
+*.pid
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+
+# macOS / Linux cruft
+.DS_Store
+Thumbs.db
+
+# Editor backups
+*~
+
+# Build scripts output
+build/
+out/
+
+# Ignore archived experiments
+archive/
