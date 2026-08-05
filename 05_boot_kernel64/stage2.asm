@@ -40,6 +40,32 @@ start:
     int 0x13
 
     ; ----------------------------------------------------
+    ; E820 memory map (real mode)
+    ; ----------------------------------------------------
+    xor ebx, ebx                 ; continuation value = 0
+    mov di, e820_buffer          ; ES:DI = buffer
+    mov dword [e820_count], 0    ; entry count = 0
+
+e820_loop:
+    mov eax, 0xE820
+    mov ecx, 24                  ; size of buffer
+    mov edx, 0x534D4150          ; 'SMAP'
+    int 0x15
+
+    jc e820_done                 ; error → stop
+    cmp eax, 0x534D4150
+    jne e820_done                ; bad signature → stop
+
+    ; one entry written at ES:DI
+    add di, 24                   ; advance buffer
+    inc word [e820_count]        ; count++
+
+    test ebx, ebx                ; EBX = 0 → last entry
+    jnz e820_loop
+
+e820_done:
+
+    ; ----------------------------------------------------
     ; Load GDT (still real mode)
     ; ----------------------------------------------------
     lgdt [gdt_descriptor]
@@ -108,23 +134,48 @@ pm_entry:
 long_mode_entry:
     mov rsp, 0x80000
 
-    ; clear registers inherited from stage2
     xor rax, rax
     xor rbx, rbx
     xor rcx, rcx
     xor rdx, rdx
 
-    ; BIOS loaded kernel at 0x00080000
+    ; ----------------------------------------------------
+    ; Fill BootInfo
+    ; ----------------------------------------------------
+    mov rbx, bootinfo
+
+    ; memory map
+    mov qword [rbx + 0], e820_buffer      ; memory_map_addr
+    movzx rax, word [e820_count]
+    mov qword [rbx + 8], rax              ; memory_map_count
+
+    ; framebuffer (none yet)
+    mov qword [rbx + 16], 0               ; framebuffer_addr
+    mov dword [rbx + 24], 0              ; framebuffer_width
+    mov dword [rbx + 28], 0              ; framebuffer_height
+    mov dword [rbx + 32], 0              ; framebuffer_pitch
+    mov dword [rbx + 36], 0              ; framebuffer_bpp
+
+    ; kernel physical range
+    mov qword [rbx + 40], 0x00100000        ; kernel_phys_start
+    mov qword [rbx + 48], 0x00100000 + (64 * 512) ; kernel_phys_end
+
+    ; paging root
+    mov rax, pml4
+    mov qword [rbx + 56], rax        ; pml4_addr
+
+    ; ----------------------------------------------------
+    ; Move kernel from 0x00080000 → 0x00100000
+    ; ----------------------------------------------------
     mov rsi, 0x00080000
-
-    ; we want it at 0x00100000
     mov rdi, 0x00100000
-
-    ; copy 8 KB (more than enough for your kernel)
     mov rcx, 1024
     rep movsq
 
-    ; jump to kernel entry
+    ; ----------------------------------------------------
+    ; Pass BootInfo pointer in RDI and jump to kernel
+    ; ----------------------------------------------------
+    mov rdi, bootinfo
     jmp 0x00100000
 
 ; --------------------------------------------------------
@@ -164,3 +215,28 @@ pt:
         dq (i * 4096) + 3
         %assign i i+1
     %endrep
+
+; --------------------------------------------------------
+; BootInfo struct
+; --------------------------------------------------------
+bootinfo:
+    dq 0                      ; memory_map_addr
+    dq 0                      ; memory_map_count
+    dq 0                      ; framebuffer_addr
+    dd 0                      ; framebuffer_width
+    dd 0                      ; framebuffer_height
+    dd 0                      ; framebuffer_pitch
+    dd 0                      ; framebuffer_bpp
+    dq 0                      ; kernel_phys_start
+    dq 0                      ; kernel_phys_end
+    dq 0                      ; pml4_addr
+
+; --------------------------------------------------------
+; E820 buffer + count
+; --------------------------------------------------------
+e820_buffer:
+    times 64*24 db 0          ; 64 entries × 24 bytes
+
+e820_count:
+    dw 0
+    dd 0                      ; padding to keep alignment tidy

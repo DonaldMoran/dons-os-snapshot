@@ -10,8 +10,8 @@ LDFLAGS := -nostdlib
 
 all: kernel.bin
 
-kernel.elf: entry.o kmain.o
-	$(LD) $(LDFLAGS) -T linker.ld -o kernel.elf entry.o kmain.o
+kernel.elf: entry.o kmain.o pmm.o
+	$(LD) $(LDFLAGS) -T linker.ld -o kernel.elf entry.o kmain.o pmm.o
 
 kernel.bin: kernel.elf
 	$(OBJCOPY) -O binary kernel.elf kernel.bin
@@ -21,6 +21,9 @@ entry.o: entry.asm
 
 kmain.o: kmain.c
 	$(CC) $(CFLAGS) -c kmain.c -o kmain.o
+
+pmm.o: pmm.c
+	$(CC) $(CFLAGS) -Iinclude -c pmm.c -o pmm.o
 
 clean:
 	rm -f *.o kernel.elf kernel.bin
