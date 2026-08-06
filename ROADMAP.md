@@ -1,3 +1,7 @@
+
+## Updated ROADMAP.md
+
+```markdown
 # ROADMAP  
 ### dons‑os (x86_64) — Project Roadmap
 
@@ -52,44 +56,58 @@ Boot chain is complete and stable.
 - Raw scancode reader  
 - Verified interrupt flow
 
-### ✔ 2.5 — Physical Memory Manager
+### ✔ 2.5 — Physical Memory Manager (PMM)
 - Parse E820 map  
-- Page allocator  
-- Page allocation test
+- Page allocator (bitmap-based)  
+- Page allocation test  
+- Supports up to 512 MiB
+
+### ✔ 2.6 — VGA Console with Scrolling
+- Correct scrolling behavior  
+- Hardware cursor control  
+- Cursor shape control (block/underline)  
+- Clean boot screen with system info
+
+### ✔ 2.7 — Command Shell
+- Command parser
+- Built‑in commands: `help`, `clear`, `info`, `mem`, `version`, `reboot`
+- Command history with backspace
+- Interactive prompt `>`
 
 ---
 
-## 3. Core Kernel Features (Upcoming)
+## 3. Core Kernel Features (In Progress)
 
-### ☐ 3.1 — ASCII Keyboard Driver
-- Convert scancodes → ASCII  
-- Handle Shift, Enter, Backspace
+### ☐ 3.1 — Exception Handlers
+- Page Fault handler (dump CR2, error code)  
+- General Protection Fault handler  
+- Double Fault handler  
+- Stack trace on panic
 
-### ☐ 3.2 — Console Line Editor
-- Input buffer  
-- Cursor movement  
-- Basic editing
-
-### ☐ 3.3 — Kernel Shell
-- Command parser  
-- Built‑in commands:
-  - `meminfo`
-  - `uptime`
-  - `help`
-  - `clear`
-
-### ☐ 3.4 — Higher‑Half Kernel
+### ☐ 3.2 — Higher‑Half Kernel
 - Map kernel to `0xFFFFFFFF80000000`  
 - Update linker script  
 - Clean identity map
 
-### ☐ 3.5 — Virtual Memory Manager
+### ☐ 3.3 — Virtual Memory Manager
 - Dynamic page mapping  
-- Kernel heap (kmalloc)
+- Page table allocation  
+- Memory protection (R/W/X bits)
 
-### ☐ 3.6 — Scheduler Prototype
+### ☐ 3.4 — Kernel Heap Allocator
+- kmalloc() / kfree()  
+- Slab or buddy allocator  
+- Memory pools for small objects
+
+### ☐ 3.5 — Scheduler Prototype
 - Timer‑driven task switching  
+- Process Control Block (PCB)  
 - Cooperative or preemptive
+
+### ☐ 3.6 — Userspace Support
+- Ring 3 (user mode)  
+- System call interface  
+- ELF loader for user programs
 
 ---
 
@@ -100,30 +118,33 @@ Boot chain is complete and stable.
 - Draw pixels, shapes, text  
 - Simple GUI experiments
 
-### ☐ 4.2 — ELF Loader
-- Load user‑space ELF binaries  
-- Minimal syscall interface
+### ☐ 4.2 — File System
+- Virtual File System (VFS) layer  
+- FAT32 or ext2 support  
+- File operations (open, read, write, close)
 
-### ☐ 4.3 — User‑Space Processes
-- Paging isolation  
-- Context switching  
-- Process table
+### ☐ 4.3 — Device Drivers
+- Serial/COM port  
+- PCI enumeration  
+- AHCI disk driver  
+- PS/2 mouse
 
 ---
 
 ## 5. Development Tools
 
 ### ✔ QEMU Debug Mode
-- `-d int,cpu_reset`  
-- `-no-reboot -no-shutdown`
+- `-d int,cpu_reset,guest_errors`  
+- `-no-reboot -no-shutdown`  
+- `-serial file:qemu.log`
 
 ### ☐ GDB Remote Debugging
 - Add `-s -S`  
 - Document breakpoints
 
-### ☐ Build Automation
-- Top‑level Makefile (done)  
-- Optional scripts directory
+### ✔ Build Automation
+- Top‑level Makefile with debug targets  
+- `make logkernel64` for debug runs
 
 ---
 
@@ -135,12 +156,14 @@ Boot chain is complete and stable.
 | Long‑mode kernel | ✔ Complete |
 | Interrupts (IRQ0/IRQ1) | ✔ Complete |
 | PMM | ✔ Complete |
-| ASCII keyboard | ☐ Planned |
-| Console | ☐ Planned |
-| Shell | ☐ Planned |
+| VGA Console | ✔ Complete |
+| Command Shell | ✔ Complete |
+| Exception Handlers | ☐ Next |
 | Higher‑half kernel | ☐ Planned |
 | VMM | ☐ Planned |
+| Heap Allocator | ☐ Planned |
 | Scheduler | ☐ Planned |
+| Userspace | ☐ Planned |
 
 ---
 

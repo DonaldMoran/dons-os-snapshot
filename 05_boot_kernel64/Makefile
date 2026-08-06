@@ -26,5 +26,23 @@ hdd.img: boot.bin stage2.bin ../04_kernel_64bit/kernel.bin
 run:
 	qemu-system-x86_64 -drive file=hdd.img,format=raw
 
+# Run with full debug logging
+log:
+	qemu-system-x86_64 -drive file=hdd.img,format=raw \
+		-d int,cpu_reset,guest_errors,unimp,page \
+		-no-reboot -no-shutdown \
+		-serial file:qemu.log \
+		-D qemu_debug.log \
+		-monitor stdio
+
+# Run with GDB server for debugging
+debug:
+	qemu-system-x86_64 -drive file=hdd.img,format=raw \
+		-s -S \
+		-no-reboot -no-shutdown \
+		-d int,cpu_reset,guest_errors \
+		-serial file:qemu.log \
+		-monitor stdio
+
 clean:
-	rm -f boot.bin stage2.bin hdd.img
+	rm -f boot.bin stage2.bin hdd.img qemu.log qemu_debug.log

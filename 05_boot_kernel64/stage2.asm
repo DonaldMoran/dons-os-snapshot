@@ -132,6 +132,7 @@ pm_entry:
 ; --------------------------------------------------------
 [bits 64]
 long_mode_entry:
+[default rel]
     mov rsp, 0x80000
 
     xor rax, rax

@@ -1,7 +1,7 @@
 # dons‑os  
 ### Educational x86_64 Boot Chain + 64‑bit Interrupt‑Driven Kernel (MIT Licensed)
 
-**dons‑os** is a fully custom x86_64 operating system built from scratch, starting at the CPU’s reset vector in **16‑bit real mode**, progressing through **32‑bit protected mode**, entering **64‑bit long mode**, and finally executing a **C‑based 64‑bit kernel** with working interrupts, timer, and keyboard input.
+**dons‑os** is a fully custom x86_64 operating system built from scratch, starting at the CPU’s reset vector in **16‑bit real mode**, progressing through **32‑bit protected mode**, entering **64‑bit long mode**, and finally executing a **C‑based 64‑bit kernel** with working interrupts, timer, keyboard input, memory management, and a command shell.
 
 The project emphasizes clarity, correctness, and educational value.  
 Each stage is isolated, minimal, and fully bootable.
@@ -16,7 +16,7 @@ Each stage is isolated, minimal, and fully bootable.
 - **03_boot_64bit** — PAE paging, PML4/PDPT/PD/PT, IA32_EFER.LME, long‑mode entry  
 
 ### Kernel Development
-- **04_kernel_64bit** — Standalone 64‑bit kernel (ELF → flat), IDT, ISR stubs, PIC remap, PIT timer, IRQ0 tick, IRQ1 keyboard, PMM, VGA  
+- **04_kernel_64bit** — Standalone 64‑bit kernel (ELF → flat), IDT, ISR stubs, PIC remap, PIT timer, IRQ0 tick, IRQ1 keyboard, PMM, VGA, command shell  
 - **05_boot_kernel64** — Full boot chain: stage2 loads kernel, enters long mode, jumps to `_start`
 
 The top‑level Makefile builds and runs all components.
@@ -48,18 +48,53 @@ make bootkernel64
 make runkernel64
 ```
 
+### Run with QEMU debug logging
+```
+make logkernel64
+```
+
 This boots:
 
-1. BIOS → stage1  
-2. stage1 loads stage2  
-3. stage2 builds page tables  
-4. stage2 enters long mode  
-5. stage2 jumps to kernel at 0x00100000  
-6. kernel executes `_start` → `kmain`  
-7. kernel prints to VGA text mode
-8. kernel initializes IDT, PIC, PIT
-9. kernel prints memory map, allocates pages, and responds to keyboard input
+ 1. BIOS → stage1  
+ 2. stage1 loads stage2  
+ 3. stage2 builds page tables  
+ 4. stage2 enters long mode  
+ 5. stage2 jumps to kernel at 0x00100000  
+ 6. kernel executes `_start` → `kmain`  
+ 7. kernel prints boot banner and system info
+ 8. kernel initializes IDT, PIC, PIT, keyboard
+ 9. kernel displays command prompt >
+10. User can type commands and receive responses
 
+---
+### Command Shell
+
+Once booted, you'll see a prompt > where you can type commands:
+- Command	Description
+- help	Show available commands
+- clear	Clear the screen 
+- info	Display system information (PML4, kernel addresses, E820 - entries, RAM)
+- mem	Display memory statistics (usable/reserved RAM)
+- version	Show version information
+- reboot	Reboot the system
+
+```
+DonsDOS v0.1 - 64-bit Operating System
+========================================
+Type 'help' for available commands
+System: x86_64 Long Mode | RAM: 127 MB | Console: VGA 80x25
+----------------------------------------
+> help
+
+Available commands:
+  help     - Show this help
+  clear    - Clear the screen
+  info     - Show system info
+  reboot   - Reboot the system
+  version  - Show version info
+  mem      - Show memory information
+> 
+```
 ---
 
 ## 🐞 Debug Mode (QEMU)
@@ -69,6 +104,11 @@ QEMU’s built‑in logging makes it dramatically easier to diagnose faults, pag
 
 Run **any** boot stage in debug mode using:
 
+### Quick debug run:
+```
+make logkernel64
+```
+### Manual debug command:
 ```
 qemu-system-x86_64 \
   -drive file=hdd.img,format=raw \
@@ -79,10 +119,14 @@ qemu-system-x86_64 \
 
 ### 🔍 What this enables
 
-- **`-d int`** — logs all CPU interrupts (hardware + software)  
-- **`-d cpu_reset`** — logs CPU resets (critical for diagnosing triple faults)  
-- **`-no-reboot`** — prevents QEMU from instantly restarting on a fault  
-- **`-no-shutdown`** — keeps QEMU open so you can read the debug output  
+- **`-d int`** — logs all CPU interrupts (hardware + software)
+- **`-d cpu_reset`** — logs CPU resets (critical for diagnosing triple faults)
+- **`-d guest_errors`** — logs guest errors (page faults, etc.)
+- **`-d page`** — logs page faults
+- **`-no-reboot`** — prevents QEMU from instantly restarting on a fault
+- **`-no-shutdown`** — keeps QEMU open so you can read the debug output
+- **`-serial file:qemu.log**` — serial output saved to file
+- **`-D qemu_debug.log**` — all debug output saved to file
 
 ### 🧩 Useful for diagnosing
 
@@ -109,62 +153,13 @@ This project is designed to be:
 
 ---
 
-## 🌱 Current Milestone: Long‑Mode Kernel Boot
+## 🌱 Tags & Milestones
 
-The `dev` branch contains the first successful:
-
-- ELF → flat binary kernel pipeline  
-- long‑mode entry via stage2  
-- kernel relocation to 0x00100000  
-- execution of `_start` and `kmain`  
-- IDT + exception handlers
-- PIC remap (IRQs 32–47)
-- PIT timer @ 100 Hz (IRQ0)
-- Global tick counter
-- Keyboard IRQ1 scancode reader
-- VGA text output
-- Physical memory map (E820)
-- Physical memory manager (page allocator)
-- Stable interrupt‑driven execution 
-
-Tag: **v0.0.1-longmode**
-Tag: v0.0.2-interrupts
-
-## 🏷️ Commit Milestone: Interrupt‑Driven Kernel
-
-This commit marks the first fully interactive 64‑bit kernel in the project’s history.
-
-Included in this milestone:
-
-- 64‑bit IDT + exception handlers  
-- PIC remap (IRQs 32–47)  
-- PIT timer @ 100 Hz (IRQ0)  
-- Global kernel tick counter  
-- Keyboard IRQ1 scancode reader  
-- VGA text output  
-- E820 physical memory map parsing  
-- Physical Memory Manager (page allocator)  
-- Stable interrupt‑driven execution  
-- Updated README.md and ROADMAP.md to reflect new kernel capabilities
-
-Tag: **v0.0.2-interrupts**
-
-## 🏷️ Commit Milestone: Interrupt‑Driven Kernel (v0.0.2-interrupts)
-
-This commit introduces the first fully interactive 64‑bit kernel:
-
-- 64‑bit IDT + exception handlers  
-- PIC remap (IRQs 32–47)  
-- PIT timer @ 100 Hz (IRQ0)  
-- Global kernel tick counter  
-- Keyboard IRQ1 scancode reader  
-- VGA text output  
-- E820 physical memory map parsing  
-- Physical Memory Manager (page allocator)  
-- Stable interrupt‑driven execution  
-- Updated README.md and ROADMAP.md to reflect new kernel capabilities
-
-Tag: **v0.0.2-interrupts**
+- `**v0.0.1-longmode**`	      First successful long-mode boot and flat binary kernel
+- `**v0.0.2-interrupts**`	    IDT, PIC remap, PIT timer, IRQ0 (tick), IRQ1 (keyboard)
+- `**v0.0.2-pmm-working**`	  PMM bitmap init fixed, E820 validated, allocator stable
+- `**v0.1-stable-keyboard**`	Stable buffered keyboard (shift/caps/backspace/space), clean VGA console, correct IRQ handling
+- `v0.1.1-shell**`	          Command shell, cursor control, improved console, bug fixes
 
 ---
 
@@ -172,11 +167,10 @@ Tag: **v0.0.2-interrupts**
 
 Planned kernel features:
 
-- ASCII keyboard translation
-- Console line editor
-- Kernel shell
-- Higher‑half kernel
+- Exception handlers (page fault, GPF, double fault)
 - Virtual memory manager
+- Heap allocator (kmalloc/kfree)
+- Higher‑half kernel
 - Scheduler
 - Framebuffer graphics
 - ELF loader

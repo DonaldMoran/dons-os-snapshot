@@ -5,7 +5,7 @@
 	boot32 run32 \
 	boot64 run64 \
 	kernel64 \
-	bootkernel64 runkernel64
+	bootkernel64 runkernel64 logkernel64
 
 # -------------------------
 # Default: build everything
@@ -53,6 +53,12 @@ bootkernel64:
 
 runkernel64:
 	$(MAKE) -C 05_boot_kernel64 run
+
+# -------------------------
+# Run with QEMU debug logging
+# -------------------------
+logkernel64:
+	$(MAKE) -C 05_boot_kernel64 log
 
 # -------------------------
 # Clean everything
