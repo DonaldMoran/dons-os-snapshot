@@ -1,182 +1,51 @@
-# dons‑os  
-### Educational x86_64 Boot Chain + 64‑bit Interrupt‑Driven Kernel (MIT Licensed)
+# dons-os-snapshot
 
-**dons‑os** is a fully custom x86_64 operating system built from scratch, starting at the CPU’s reset vector in **16‑bit real mode**, progressing through **32‑bit protected mode**, entering **64‑bit long mode**, and finally executing a **C‑based 64‑bit kernel** with working interrupts, timer, keyboard input, memory management, and a command shell.
+This repository is a **frozen snapshot** of the `dons-os-x86_64` project at milestone **v0.1.1-shell**.  
+It exists solely as a **permanent branching point** for future operating system families.
 
-The project emphasizes clarity, correctness, and educational value.  
-Each stage is isolated, minimal, and fully bootable.
+## Snapshot Purpose
 
----
+This repo captures the kernel exactly as it existed at the v0.1.1-shell milestone:
+- Full 16 → 32 → 64-bit boot chain
+- Verified long-mode entry
+- Working PMM (bitmap physical memory allocator)
+- IDT, PIC remap, PIT timer, IRQ0/IRQ1
+- Buffered keyboard driver (shift, caps, backspace, repeat control)
+- VGA text console with scrolling and cursor control
+- Interactive command shell
+- Clean project structure, Makefiles, and documentation
 
-## 📁 Repository Structure
+This snapshot is **immutable**.  
+No new commits will be added, and no development will occur here.
 
-### Bootloaders
-- **01_boot_16bit** — BIOS boot sector, INT 0x10 text, INT 0x13 disk loading  
-- **02_boot_32bit** — A20 enable, GDT, protected mode, VGA text  
-- **03_boot_64bit** — PAE paging, PML4/PDPT/PD/PT, IA32_EFER.LME, long‑mode entry  
+## Why This Snapshot Exists
 
-### Kernel Development
-- **04_kernel_64bit** — Standalone 64‑bit kernel (ELF → flat), IDT, ISR stubs, PIC remap, PIT timer, IRQ0 tick, IRQ1 keyboard, PMM, VGA, command shell  
-- **05_boot_kernel64** — Full boot chain: stage2 loads kernel, enters long mode, jumps to `_start`
+The main `dons-os-x86_64` repository will continue evolving into a full modern OS.  
+This snapshot provides a stable, minimal, well‑defined kernel foundation for creating multiple OS families without polluting the main repo.
 
-The top‑level Makefile builds and runs all components.
+Future OS forks created from this snapshot include:
+- `dons-dos` — minimal DOS‑like OS
+- `dons-linux` — POSIX‑like OS with ELF loader and scheduler
+- `dons-embedded` — tiny deterministic embedded kernel
+- `dons-glibc` — full user-space capable OS with libc support
 
----
+Each fork begins from this exact snapshot commit and evolves independently.
 
-## 🚀 Building & Running
+## Repository Policy
 
-### Build everything
-```bash
-make all
-```
+- Only the `main` branch is retained.
+- All tags from the original project are preserved.
+- No development will occur in this repository.
+- This repo may be archived to prevent accidental changes.
 
-### Run individual boot demos
-```
-make run16
-make run32
-make run64
-```
+## Upstream Project
 
-### Build the 64‑bit kernel
-```
-make kernel64
-```
+Active development continues in the main repository:
 
-### Build + run the full long‑mode OS
-```
-make bootkernel64
-make runkernel64
-```
+`https://github.com/DonaldMoran/dons-os-x86_64`
 
-### Run with QEMU debug logging
-```
-make logkernel64
-```
+This snapshot simply preserves the v0.1.1-shell milestone as a clean, stable branching point for future OS families.
 
-This boots:
-
- 1. BIOS → stage1  
- 2. stage1 loads stage2  
- 3. stage2 builds page tables  
- 4. stage2 enters long mode  
- 5. stage2 jumps to kernel at 0x00100000  
- 6. kernel executes `_start` → `kmain`  
- 7. kernel prints boot banner and system info
- 8. kernel initializes IDT, PIC, PIT, keyboard
- 9. kernel displays command prompt >
-10. User can type commands and receive responses
-
----
-### Command Shell
-
-Once booted, you'll see a prompt > where you can type commands:
-- Command	Description
-- help	Show available commands
-- clear	Clear the screen 
-- info	Display system information (PML4, kernel addresses, E820 - entries, RAM)
-- mem	Display memory statistics (usable/reserved RAM)
-- version	Show version information
-- reboot	Reboot the system
-
-```
-DonsDOS v0.1 - 64-bit Operating System
-========================================
-Type 'help' for available commands
-System: x86_64 Long Mode | RAM: 127 MB | Console: VGA 80x25
-----------------------------------------
-> help
-
-Available commands:
-  help     - Show this help
-  clear    - Clear the screen
-  info     - Show system info
-  reboot   - Reboot the system
-  version  - Show version info
-  mem      - Show memory information
-> 
-```
----
-
-## 🐞 Debug Mode (QEMU)
-
-Debugging early boot code is notoriously difficult.  
-QEMU’s built‑in logging makes it dramatically easier to diagnose faults, paging issues, and incorrect mode transitions.
-
-Run **any** boot stage in debug mode using:
-
-### Quick debug run:
-```
-make logkernel64
-```
-### Manual debug command:
-```
-qemu-system-x86_64 \
-  -drive file=hdd.img,format=raw \
-  -d int,cpu_reset \
-  -no-reboot \
-  -no-shutdown
-```
-
-### 🔍 What this enables
-
-- **`-d int`** — logs all CPU interrupts (hardware + software)
-- **`-d cpu_reset`** — logs CPU resets (critical for diagnosing triple faults)
-- **`-d guest_errors`** — logs guest errors (page faults, etc.)
-- **`-d page`** — logs page faults
-- **`-no-reboot`** — prevents QEMU from instantly restarting on a fault
-- **`-no-shutdown`** — keeps QEMU open so you can read the debug output
-- **`-serial file:qemu.log**` — serial output saved to file
-- **`-D qemu_debug.log**` — all debug output saved to file
-
-### 🧩 Useful for diagnosing
-
-- invalid far jumps  
-- incorrect segment selectors  
-- paging faults  
-- triple faults  
-- CR0/CR4/EFER misconfiguration  
-- long‑mode entry failures  
-
-This debug mode was instrumental in getting the 64‑bit kernel working.
-
----
-
-## 🎓 Purpose
-
-This project is designed to be:
-
-- **Readable** — minimal, clean assembly and C  
-- **Incremental** — each stage builds on the last  
-- **Accurate** — follows x86_64 architectural rules  
-- **Practical** — boots in QEMU with simple commands  
-- **Educational** — a reference for anyone learning OS development  
-
----
-
-## 🌱 Tags & Milestones
-
-- `**v0.0.1-longmode**`	      First successful long-mode boot and flat binary kernel
-- `**v0.0.2-interrupts**`	    IDT, PIC remap, PIT timer, IRQ0 (tick), IRQ1 (keyboard)
-- `**v0.0.2-pmm-working**`	  PMM bitmap init fixed, E820 validated, allocator stable
-- `**v0.1-stable-keyboard**`	Stable buffered keyboard (shift/caps/backspace/space), clean VGA console, correct IRQ handling
-- `v0.1.1-shell**`	          Command shell, cursor control, improved console, bug fixes
-
----
-
-## 🌱 Next Steps
-
-Planned kernel features:
-
-- Exception handlers (page fault, GPF, double fault)
-- Virtual memory manager
-- Heap allocator (kmalloc/kfree)
-- Higher‑half kernel
-- Scheduler
-- Framebuffer graphics
-- ELF loader
-- User‑space processes
-
----
 
 ## 📜 License
 
