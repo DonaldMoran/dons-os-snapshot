@@ -1,7 +1,7 @@
 CC      := clang
 LD      := ld.lld
 AS      := nasm
-OBJCOPY := llvm-objcopy   # or 'objcopy' if you prefer GNU
+OBJCOPY := llvm-objcopy
 
 CFLAGS  := -target x86_64-unknown-elf -ffreestanding -O2 -Wall -Wextra -mcmodel=small -fno-pic
 LDFLAGS := -nostdlib
@@ -10,20 +10,48 @@ LDFLAGS := -nostdlib
 
 all: kernel.bin
 
-kernel.elf: entry.o kmain.o pmm.o
-	$(LD) $(LDFLAGS) -T linker.ld -o kernel.elf entry.o kmain.o pmm.o
+# ---------------------------------------------------------
+# Add ALL kernel object files here
+# ---------------------------------------------------------
+OBJS = entry.o kmain.o pmm.o idt.o interrupts.o idt_load.o isr.o vga.o
+
+kernel.elf: $(OBJS)
+	$(LD) $(LDFLAGS) -T linker.ld -o kernel.elf $(OBJS)
+
+vga.o: vga.c
+	$(CC) $(CFLAGS) -Iinclude -I. -c vga.c -o vga.o
+
 
 kernel.bin: kernel.elf
 	$(OBJCOPY) -O binary kernel.elf kernel.bin
 
+# ---------------------------------------------------------
+# Assembly sources
+# ---------------------------------------------------------
 entry.o: entry.asm
 	$(AS) -f elf64 entry.asm -o entry.o
 
+idt_load.o: idt_load.asm
+	$(AS) -f elf64 idt_load.asm -o idt_load.o
+
+isr.o: isr.asm
+	$(AS) -f elf64 isr.asm -o isr.o
+
+# ---------------------------------------------------------
+# C sources
+# ---------------------------------------------------------
 kmain.o: kmain.c
-	$(CC) $(CFLAGS) -c kmain.c -o kmain.o
+	$(CC) $(CFLAGS) -Iinclude -c kmain.c -o kmain.o
 
 pmm.o: pmm.c
 	$(CC) $(CFLAGS) -Iinclude -c pmm.c -o pmm.o
 
+idt.o: idt.c
+	$(CC) $(CFLAGS) -Iinclude -c idt.c -o idt.o
+
+interrupts.o: interrupts.c
+	$(CC) $(CFLAGS) -Iinclude -c interrupts.c -o interrupts.o
+
 clean:
 	rm -f *.o kernel.elf kernel.bin
+

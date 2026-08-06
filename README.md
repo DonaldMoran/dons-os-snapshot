@@ -1,25 +1,24 @@
 # dons‑os  
-### Educational x86_64 Boot Chain + 64‑bit Kernel Project (MIT Licensed)
+### Educational x86_64 Boot Chain + 64‑bit Interrupt‑Driven Kernel (MIT Licensed)
 
-This repository documents the complete boot path of an **x86_64 operating system**, starting from the CPU’s reset state in **16‑bit real mode**, progressing through **32‑bit protected mode**, entering **64‑bit long mode**, and finally loading and executing a **C‑based 64‑bit kernel**.
+**dons‑os** is a fully custom x86_64 operating system built from scratch, starting at the CPU’s reset vector in **16‑bit real mode**, progressing through **32‑bit protected mode**, entering **64‑bit long mode**, and finally executing a **C‑based 64‑bit kernel** with working interrupts, timer, and keyboard input.
 
-Each stage is implemented as a clean, minimal, self‑contained bootloader or kernel module.  
-The purpose is educational clarity: understand **exactly** how the processor transitions between modes and how a modern OS begins execution.
+The project emphasizes clarity, correctness, and educational value.  
+Each stage is isolated, minimal, and fully bootable.
 
 ---
 
 ## 📁 Repository Structure
 
 ### Bootloaders
-- **01_boot_16bit** — BIOS environment, boot sector, early text output  
-- **02_boot_32bit** — A20 enable, GDT setup, protected mode, VGA text  
+- **01_boot_16bit** — BIOS boot sector, INT 0x10 text, INT 0x13 disk loading  
+- **02_boot_32bit** — A20 enable, GDT, protected mode, VGA text  
 - **03_boot_64bit** — PAE paging, PML4/PDPT/PD/PT, IA32_EFER.LME, long‑mode entry  
 
 ### Kernel Development
-- **04_kernel_64bit** — Standalone 64‑bit kernel build (ELF → flat binary), `_start`, `kmain`, VGA text  
-- **05_boot_kernel64** — Full boot pipeline: stage2 loads kernel, enters long mode, jumps to `_start`
+- **04_kernel_64bit** — Standalone 64‑bit kernel (ELF → flat), IDT, ISR stubs, PIC remap, PIT timer, IRQ0 tick, IRQ1 keyboard, PMM, VGA  
+- **05_boot_kernel64** — Full boot chain: stage2 loads kernel, enters long mode, jumps to `_start`
 
-Each stage is fully bootable and isolated in its own directory.  
 The top‑level Makefile builds and runs all components.
 
 ---
@@ -27,7 +26,7 @@ The top‑level Makefile builds and runs all components.
 ## 🚀 Building & Running
 
 ### Build everything
-```
+```bash
 make all
 ```
 
@@ -58,6 +57,8 @@ This boots:
 5. stage2 jumps to kernel at 0x00100000  
 6. kernel executes `_start` → `kmain`  
 7. kernel prints to VGA text mode
+8. kernel initializes IDT, PIC, PIT
+9. kernel prints memory map, allocates pages, and responds to keyboard input
 
 ---
 
@@ -116,10 +117,54 @@ The `dev` branch contains the first successful:
 - long‑mode entry via stage2  
 - kernel relocation to 0x00100000  
 - execution of `_start` and `kmain`  
-- VGA text output from 64‑bit C code  
-- stable RIP flow with no triple faults  
+- IDT + exception handlers
+- PIC remap (IRQs 32–47)
+- PIT timer @ 100 Hz (IRQ0)
+- Global tick counter
+- Keyboard IRQ1 scancode reader
+- VGA text output
+- Physical memory map (E820)
+- Physical memory manager (page allocator)
+- Stable interrupt‑driven execution 
 
 Tag: **v0.0.1-longmode**
+Tag: v0.0.2-interrupts
+
+## 🏷️ Commit Milestone: Interrupt‑Driven Kernel
+
+This commit marks the first fully interactive 64‑bit kernel in the project’s history.
+
+Included in this milestone:
+
+- 64‑bit IDT + exception handlers  
+- PIC remap (IRQs 32–47)  
+- PIT timer @ 100 Hz (IRQ0)  
+- Global kernel tick counter  
+- Keyboard IRQ1 scancode reader  
+- VGA text output  
+- E820 physical memory map parsing  
+- Physical Memory Manager (page allocator)  
+- Stable interrupt‑driven execution  
+- Updated README.md and ROADMAP.md to reflect new kernel capabilities
+
+Tag: **v0.0.2-interrupts**
+
+## 🏷️ Commit Milestone: Interrupt‑Driven Kernel (v0.0.2-interrupts)
+
+This commit introduces the first fully interactive 64‑bit kernel:
+
+- 64‑bit IDT + exception handlers  
+- PIC remap (IRQs 32–47)  
+- PIT timer @ 100 Hz (IRQ0)  
+- Global kernel tick counter  
+- Keyboard IRQ1 scancode reader  
+- VGA text output  
+- E820 physical memory map parsing  
+- Physical Memory Manager (page allocator)  
+- Stable interrupt‑driven execution  
+- Updated README.md and ROADMAP.md to reflect new kernel capabilities
+
+Tag: **v0.0.2-interrupts**
 
 ---
 
@@ -127,15 +172,15 @@ Tag: **v0.0.1-longmode**
 
 Planned kernel features:
 
-- higher‑half kernel  
-- linker script improvements  
-- 64‑bit IDT + interrupts  
-- keyboard input  
-- framebuffer graphics  
-- physical memory map (E820)  
-- memory manager  
-- scheduler  
-- shell  
+- ASCII keyboard translation
+- Console line editor
+- Kernel shell
+- Higher‑half kernel
+- Virtual memory manager
+- Scheduler
+- Framebuffer graphics
+- ELF loader
+- User‑space processes
 
 ---
 

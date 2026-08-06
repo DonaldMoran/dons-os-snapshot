@@ -1,44 +1,48 @@
 #include <stdint.h>
-//#include "include/bootinfo.h"
+#include "include/bootinfo.h"
 #include "include/pmm.h"
+#include "include/idt.h"
+#include "include/vga.h"
+
+extern void pit_init(uint32_t freq);
 
 static volatile uint16_t *const VGA = (uint16_t *)0xB8000;
 
-static void vga_print_at(int row, int col, const char *s) {
-    int pos = row * 80 + col;
-    while (*s) {
-        VGA[pos++] = (0x07 << 8) | *s++;
-    }
-}
-
-static void vga_print_hex(int row, int col, uint64_t val) {
-    const char *hex = "0123456789ABCDEF";
-    int pos = row * 80 + col;
-
-    for (int i = 60; i >= 0; i -= 4) {
-        VGA[pos++] = (0x07 << 8) | hex[(val >> i) & 0xF];
-    }
-}
-
-static void vga_print_dec(int row, int col, uint64_t val) {
-    char buf[32];
-    int i = 0;
-
-    if (val == 0) {
-        VGA[row * 80 + col] = (0x07 << 8) | '0';
-        return;
-    }
-
-    while (val > 0 && i < (int)(sizeof(buf) - 1)) {
-        buf[i++] = '0' + (val % 10);
-        val /= 10;
-    }
-
-    int pos = row * 80 + col;
-    while (i--) {
-        VGA[pos++] = (0x07 << 8) | buf[i];
-    }
-}
+//static void vga_print_at(int row, int col, const char *s) {
+//    int pos = row * 80 + col;
+//    while (*s) {
+//        VGA[pos++] = (0x07 << 8) | *s++;
+//    }
+//}
+//
+//static void vga_print_hex(int row, int col, uint64_t val) {
+//    const char *hex = "0123456789ABCDEF";
+//    int pos = row * 80 + col;
+//
+//    for (int i = 60; i >= 0; i -= 4) {
+//        VGA[pos++] = (0x07 << 8) | hex[(val >> i) & 0xF];
+//    }
+//}
+//
+//static void vga_print_dec(int row, int col, uint64_t val) {
+//    char buf[32];
+//    int i = 0;
+//
+//    if (val == 0) {
+//        VGA[row * 80 + col] = (0x07 << 8) | '0';
+//        return;
+//    }
+//
+//    while (val > 0 && i < (int)(sizeof(buf) - 1)) {
+//        buf[i++] = '0' + (val % 10);
+//        val /= 10;
+//    }
+//
+//    int pos = row * 80 + col;
+//    while (i--) {
+//        VGA[pos++] = (0x07 << 8) | buf[i];
+//    }
+//}
 
 void kmain(BootInfo *info) {
     // clear screen
@@ -46,7 +50,25 @@ void kmain(BootInfo *info) {
         VGA[i] = (0x07 << 8) | ' ';
     }
 
-    vga_print_at(2, 30, "KERNEL64 FROM C");
+    //vga_print_at(2, 30, "KERNEL64 FROM C");
+    
+    //vga_print_at(3, 2, "Before IDT");
+    
+    idt_init();
+    pit_init(100);   // 100 Hz timer
+    asm volatile("sti");
+
+
+    //asm volatile("int $0");     // Proves IDT iw working
+
+
+    //vga_print_at(3, 2, "After IDT");
+
+    // later: enable interrupts when you have timer/keyboard set up
+    // asm volatile ("sti");
+
+    // test: intentionally trigger divide-by-zero
+    // int x = 1 / 0;
 
     // BootInfo values
     vga_print_at(4, 10, "PML4 addr: ");
@@ -109,6 +131,8 @@ void kmain(BootInfo *info) {
 	
     vga_print_at(20, 2, "Alloc page3: ");
     vga_print_hex(20, 16, page3);
+
+    asm volatile("sti");
 
     for (;;);
 }

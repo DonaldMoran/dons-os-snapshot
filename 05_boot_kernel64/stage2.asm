@@ -197,24 +197,21 @@ gdt_descriptor:
 ; --------------------------------------------------------
 align 4096
 pml4:
-    dq pdpt + 3
+    dq pdpt + 3              ; present + writable
 
 align 4096
 pdpt:
-    dq pd + 3
+    dq pd + 3                ; present + writable
 
 align 4096
 pd:
-    dq pt + 3
-    times 511 dq 0
-
-align 4096
-pt:
     %assign i 0
-    %rep 512
-        dq (i * 4096) + 3
+    %rep 256                 ; 256 * 2MiB = 512MiB
+        dq (i * 0x200000) + 0x83
+        ; 0x80 = PS (2MiB page), 0x02 = writable, 0x01 = present
         %assign i i+1
     %endrep
+    times 256 dq 0           ; remaining entries unused
 
 ; --------------------------------------------------------
 ; BootInfo struct

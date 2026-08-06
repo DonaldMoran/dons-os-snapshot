@@ -95,10 +95,10 @@ uint64_t pmm_alloc_page(void) {
     for (uint64_t page = 0; page < MAX_PAGES; page++) {
         uint64_t phys = page * PAGE_SIZE;
 
-        // TEMP: only allow pages below 64 MB
-        if (phys >= 0x04000000) {
-            continue;
-        }
+//        // TEMP: only allow pages below 64 MB
+//        if (phys >= 0x04000000) {
+//            continue;
+//        }
 
         if (!bitmap_test(page)) {
             bitmap_set(page);

@@ -1,8 +1,7 @@
 # ROADMAP  
 ### dons‑os (x86_64) — Project Roadmap
 
-This roadmap outlines the planned evolution of **dons‑os**, beginning with the foundational boot stages and progressing toward a functional x86_64 kernel.  
-Each milestone builds on the previous one, maintaining clarity, correctness, and educational value.
+This roadmap outlines the evolution of **dons‑os**, from the earliest boot stages to a functional interrupt‑driven kernel and beyond.
 
 ---
 
@@ -13,131 +12,118 @@ Each milestone builds on the previous one, maintaining clarity, correctness, and
 - INT 0x10 text output
 - INT 0x13 disk loading
 - Stage2 loader
-- Minimal, clean real‑mode environment
 
 ### ✔ 1.2 — 32‑bit Protected Mode
-- A20 line enabled
-- GDT created and loaded
+- A20 enable
+- GDT setup
 - CR0.PE → protected mode
-- Far jump into 32‑bit code
-- VGA text output in PM
-- Stable flat memory model
+- VGA text output
 
 ### ✔ 1.3 — 64‑bit Long Mode
-- PAE paging enabled
-- PML4 → PDPT → PD → PT identity map
+- PAE paging (PML4 → PDPT → PD → PT)
 - IA32_EFER.LME set
 - CR0.PG → paging enabled
-- Far jump into 64‑bit code segment
+- Far jump into 64‑bit code
 - 64‑bit VGA text output
-- Fully working long‑mode entry
 
-The boot chain is complete and serves as the foundation for kernel development.
-
----
-
-## 2. Kernel Foundations (Upcoming)
-
-### ☐ 2.1 — Higher‑Half Kernel Layout
-- Choose canonical base: `0xFFFFFFFF80000000`
-- Map kernel text/data into higher half
-- Update paging structures accordingly
-- Prepare linker script
-
-### ☐ 2.2 — Linker Script + C Runtime
-- Create `linker.ld`
-- Define `.text`, `.data`, `.bss`, `.rodata`
-- Provide `_start` symbol for 64‑bit entry
-- Implement minimal C runtime:
-  - stack setup  
-  - zero `.bss`  
-  - call `kmain()`  
-
-### ☐ 2.3 — 64‑bit IDT + Interrupts
-- Build IDT in long mode
-- Implement basic exception handlers
-- Implement IRQ remapping (PIC)
-- Add keyboard interrupt handler
-
-### ☐ 2.4 — Serial Logging (COM1)
-- Initialize COM1 (0x3F8)
-- Provide `serial_write()` for debugging
-- Optional: integrate with QEMU `-serial stdio`
+Boot chain is complete and stable.
 
 ---
 
-## 3. Core Kernel Features
+## 2. Kernel Foundations (Completed)
 
-### ☐ 3.1 — Physical Memory Manager
-- Parse memory map (BIOS or UEFI)
-- Implement bitmap or buddy allocator
-- Provide `alloc_page()` / `free_page()`
+### ✔ 2.1 — 64‑bit IDT + Exceptions
+- IDT structure in long mode  
+- ISR stubs in assembly  
+- Basic exception handlers (Divide, Debug)
 
-### ☐ 3.2 — Virtual Memory Manager
-- Map/unmap pages dynamically
-- Kernel heap allocator (kmalloc)
-- Higher‑half identity map cleanup
+### ✔ 2.2 — PIC Remap
+- Master → 0x20  
+- Slave → 0x28  
+- IRQs mapped to vectors 32–47
 
-### ☐ 3.3 — Basic Device Drivers
-- Keyboard (PS/2)
-- Text framebuffer (VGA or VBE)
-- Serial port
+### ✔ 2.3 — PIT Timer (IRQ0)
+- PIT programmed to 100 Hz  
+- Global tick counter  
+- On‑screen tick display
 
-### ☐ 3.4 — Timer + Scheduler Prototype
-- PIT or HPET timer interrupts
-- Task structure
-- Cooperative or preemptive switching
+### ✔ 2.4 — Keyboard IRQ1
+- IRQ1 handler  
+- Raw scancode reader  
+- Verified interrupt flow
+
+### ✔ 2.5 — Physical Memory Manager
+- Parse E820 map  
+- Page allocator  
+- Page allocation test
+
+---
+
+## 3. Core Kernel Features (Upcoming)
+
+### ☐ 3.1 — ASCII Keyboard Driver
+- Convert scancodes → ASCII  
+- Handle Shift, Enter, Backspace
+
+### ☐ 3.2 — Console Line Editor
+- Input buffer  
+- Cursor movement  
+- Basic editing
+
+### ☐ 3.3 — Kernel Shell
+- Command parser  
+- Built‑in commands:
+  - `meminfo`
+  - `uptime`
+  - `help`
+  - `clear`
+
+### ☐ 3.4 — Higher‑Half Kernel
+- Map kernel to `0xFFFFFFFF80000000`  
+- Update linker script  
+- Clean identity map
+
+### ☐ 3.5 — Virtual Memory Manager
+- Dynamic page mapping  
+- Kernel heap (kmalloc)
+
+### ☐ 3.6 — Scheduler Prototype
+- Timer‑driven task switching  
+- Cooperative or preemptive
 
 ---
 
 ## 4. User‑Facing Features
 
-### ☐ 4.1 — Kernel Shell
-- Basic command parser
-- Built‑in commands:
-  - `meminfo`
-  - `cpuinfo`
-  - `help`
-  - `reboot`
-
-### ☐ 4.2 — Improved Graphics (Optional)
-- Switch from VGA text mode to framebuffer
-- Draw pixels, rectangles, text
+### ☐ 4.1 — Framebuffer Graphics
+- Switch from VGA text mode  
+- Draw pixels, shapes, text  
 - Simple GUI experiments
 
----
+### ☐ 4.2 — ELF Loader
+- Load user‑space ELF binaries  
+- Minimal syscall interface
 
-## 5. Long‑Term Goals
-
-### ☐ 5.1 — ELF Loader
-- Load and execute user‑space ELF binaries
-- Provide minimal syscall interface
-
-### ☐ 5.2 — Virtual File System (VFS)
-- Abstract filesystem layer
-- RAMFS or simple FAT driver
-
-### ☐ 5.3 — User‑Space Processes
-- Paging isolation
-- Syscalls
-- Context switching
+### ☐ 4.3 — User‑Space Processes
+- Paging isolation  
+- Context switching  
+- Process table
 
 ---
 
-## 6. Development Tools
+## 5. Development Tools
 
 ### ✔ QEMU Debug Mode
-- `-d int,cpu_reset`
+- `-d int,cpu_reset`  
 - `-no-reboot -no-shutdown`
-- Essential for diagnosing triple faults
 
 ### ☐ GDB Remote Debugging
-- Add `-s -S` support
-- Document breakpoints for paging, mode switches
+- Add `-s -S`  
+- Document breakpoints
 
 ### ☐ Build Automation
-- Top‑level Makefile (completed)
-- Optional: `scripts/` directory for utilities
+- Top‑level Makefile (done)  
+- Optional scripts directory
 
 ---
 
@@ -145,20 +131,22 @@ The boot chain is complete and serves as the foundation for kernel development.
 
 | Stage | Status |
 |-------|--------|
-| 16‑bit real mode | ✔ Complete |
-| 32‑bit protected mode | ✔ Complete |
-| 64‑bit long mode | ✔ Complete |
+| Boot chain | ✔ Complete |
+| Long‑mode kernel | ✔ Complete |
+| Interrupts (IRQ0/IRQ1) | ✔ Complete |
+| PMM | ✔ Complete |
+| ASCII keyboard | ☐ Planned |
+| Console | ☐ Planned |
+| Shell | ☐ Planned |
 | Higher‑half kernel | ☐ Planned |
-| C runtime + linker | ☐ Planned |
-| IDT + interrupts | ☐ Planned |
-| Memory manager | ☐ Planned |
-| Kernel shell | ☐ Planned |
+| VMM | ☐ Planned |
+| Scheduler | ☐ Planned |
 
 ---
 
 ## Notes
 
-This roadmap is intentionally incremental.  
-Each milestone is small, achievable, and builds toward a fully functional x86_64 kernel while keeping the project educational and approachable.
+The roadmap is intentionally incremental.  
+Each milestone builds toward a fully functional x86_64 kernel while keeping the project educational and approachable.
 
 MIT licensed — contributions welcome.
