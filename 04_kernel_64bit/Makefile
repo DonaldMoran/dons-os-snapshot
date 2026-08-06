@@ -13,17 +13,20 @@ all: kernel.bin
 # ---------------------------------------------------------
 # Add ALL kernel object files here
 # ---------------------------------------------------------
-OBJS = entry.o kmain.o pmm.o idt.o interrupts.o idt_load.o isr.o vga.o
+OBJS = entry.o kmain.o pmm.o idt.o interrupts.o idt_load.o isr.o vga.o keyboard.o
 
 kernel.elf: $(OBJS)
 	$(LD) $(LDFLAGS) -T linker.ld -o kernel.elf $(OBJS)
 
+kernel.bin: kernel.elf
+	$(OBJCOPY) -O binary kernel.elf kernel.bin
+
 vga.o: vga.c
 	$(CC) $(CFLAGS) -Iinclude -I. -c vga.c -o vga.o
 
+keyboard.o: keyboard.c
+	$(CC) $(CFLAGS) -Iinclude -c keyboard.c -o keyboard.o
 
-kernel.bin: kernel.elf
-	$(OBJCOPY) -O binary kernel.elf kernel.bin
 
 # ---------------------------------------------------------
 # Assembly sources

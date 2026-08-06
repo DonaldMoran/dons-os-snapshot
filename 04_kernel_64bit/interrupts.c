@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "include/vga.h"
+#include "include/keyboard.h"
 
 #define PIC1_CMD  0x20
 #define PIC1_DATA 0x21
@@ -10,10 +11,9 @@
 
 #define PIT_CH0      0x40
 #define PIT_CMD      0x43
-
 #define PIT_MODE     0x36   // Channel 0, Lo/Hi byte, mode 3 (square wave)
 
-#define KBD_DATA 0x60
+#define KBD_DATA   0x60
 #define KBD_STATUS 0x64
 
 static inline void outb(uint16_t port, uint8_t val) {
@@ -48,12 +48,14 @@ void pic_remap(void) {
 
 static volatile uint64_t g_ticks = 0;
 
+// keyboard state
+static int g_shift = 0;
+static int g_caps  = 0;
+
 void irq0_handler(void) {
     g_ticks++;
 
-    // Example: print every 100 ticks (~1 second at 100 Hz)
     if (g_ticks % 100 == 0) {
-        //vga_print("Tick\n");
         vga_print_at(0, 0, "Tick: ");
         vga_print_dec(0, 6, g_ticks);
     }
@@ -62,12 +64,47 @@ void irq0_handler(void) {
 }
 
 void irq1_handler(void) {
+    uint8_t status = inb(KBD_STATUS);
+    if (!(status & 0x01)) {
+        outb(PIC1_CMD, PIC_EOI);
+        return;
+    }
+
     uint8_t sc = inb(KBD_DATA);
+
+    // modifier keys
+    switch (sc) {
+        // left/right shift make
+        case 0x2A:
+        case 0x36:
+            g_shift = 1;
+            outb(PIC1_CMD, PIC_EOI);
+            return;
+
+        // left/right shift break
+        case 0xAA:
+        case 0xB6:
+            g_shift = 0;
+            outb(PIC1_CMD, PIC_EOI);
+            return;
+
+        // caps lock toggle (make)
+        case 0x3A:
+            g_caps ^= 1;
+            outb(PIC1_CMD, PIC_EOI);
+            return;
+    }
+
+    // Debug: show raw scancode
     vga_print_at(1, 0, "Scancode: ");
     vga_print_hex(1, 11, sc);
+
+    char c = scancode_to_ascii(sc, g_shift, g_caps);
+    if (c)
+        kbd_buffer_put(c);
+
     outb(PIC1_CMD, PIC_EOI);
 }
-
 
 void isr0_handler(void) {
     vga_print("EXCEPTION: Divide by zero\n");
@@ -79,9 +116,9 @@ void isr1_handler(void) {
 }
 
 void pit_init(uint32_t freq) {
-    uint32_t divisor = 1193180 / freq;   // PIT base clock
+    uint32_t divisor = 1193180 / freq;
 
     outb(PIT_CMD, PIT_MODE);
-    outb(PIT_CH0, divisor & 0xFF);        // low byte
-    outb(PIT_CH0, (divisor >> 8) & 0xFF); // high byte
+    outb(PIT_CH0, divisor & 0xFF);
+    outb(PIT_CH0, (divisor >> 8) & 0xFF);
 }
